@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 import IngredientForm from "./IngredientForm";
 import IngredientList from "./IngredientList";
@@ -6,6 +6,7 @@ import Search from "./Search";
 
 const Ingredients = () => {
   const [userIngredients, setUserIngredients] = useState([]);
+
   useEffect(() => {
     fetch("http://172.20.10.2:8088/ingredienst/api/v1")
       .then((response) => response.json())
@@ -27,6 +28,10 @@ const Ingredients = () => {
   useEffect(() => {
     console.log("RENDERING INGREDIENST", userIngredients);
   }, [userIngredients]);
+
+  const filteredIngredientsHandler = useCallback((filteredIngredients) => {
+    setUserIngredients(filteredIngredients);
+  }, []);
   const addIngredientHandler = (ingredient) => {
     fetch("http://172.20.10.2:8088/ingredienst/api/v1", {
       method: "POST",
@@ -55,7 +60,7 @@ const Ingredients = () => {
       <IngredientForm onAddIngredient={addIngredientHandler} />
 
       <section>
-        <Search />
+        <Search onLoadIngredients={filteredIngredientsHandler} />
         <IngredientList
           ingredients={userIngredients}
           onRemoveItem={removeIngredientHandler}
