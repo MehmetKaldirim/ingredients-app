@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 import Card from "../UI/Card";
 import "./Search.css";
@@ -6,29 +6,36 @@ import "./Search.css";
 const Search = React.memo((props) => {
   const { onLoadIngredients } = props;
   const [enteredFilter, setEnteredFilter] = useState("");
+  const inputRef = useRef();
 
   useEffect(() => {
-    const query = enteredFilter.length === 0 ? "" : enteredFilter;
-    console.log("query");
-    console.log(query);
-    fetch(`http://172.20.10.2:8088/ingredienst/api/v1/${query}`)
-      .then((response) => response.json())
-      .then((responseData) => {
-        const loadedIngredients = [];
-        const data = responseData.data;
+    const timer = setTimeout(() => {
+      if (enteredFilter === inputRef.current.value) {
+        const query = enteredFilter.length === 0 ? "" : "/" + enteredFilter;
 
-        for (const key in data) {
-          loadedIngredients.push({
-            id: key,
-            title: data[key].title,
-            amount: data[key].amount,
+        fetch(`http://172.20.10.2:8088/ingredienst/api/v1${query}`)
+          .then((response) => response.json())
+          .then((responseData) => {
+            const loadedIngredients = [];
+            const data = responseData.data;
+
+            for (const key in data) {
+              loadedIngredients.push({
+                id: key,
+                title: data[key].title,
+                amount: data[key].amount,
+              });
+            }
+            console.log("here we are");
+            console.log(loadedIngredients);
+            onLoadIngredients(loadedIngredients);
           });
-        }
-        console.log("here we are");
-        console.log(loadedIngredients);
-        onLoadIngredients(loadedIngredients);
-      });
-  }, [enteredFilter, onLoadIngredients]);
+      }
+    }, 3500);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [enteredFilter, onLoadIngredients, inputRef]);
 
   return (
     <section className="search">
@@ -36,6 +43,7 @@ const Search = React.memo((props) => {
         <div className="search-input">
           <label>Filter by Title</label>
           <input
+            ref={inputRef}
             type="text"
             value={enteredFilter}
             onChange={(event) => setEnteredFilter(event.target.value)}

@@ -2,28 +2,13 @@ import React, { useState, useEffect, useCallback } from "react";
 
 import IngredientForm from "./IngredientForm";
 import IngredientList from "./IngredientList";
+import ErrorModal from "../UI/ErrorModal";
 import Search from "./Search";
 
 const Ingredients = () => {
   const [userIngredients, setUserIngredients] = useState([]);
-
-  useEffect(() => {
-    fetch("http://172.20.10.2:8088/ingredienst/api/v1")
-      .then((response) => response.json())
-      .then((responseData) => {
-        const loadedIngredienst = [];
-        const data = responseData.data;
-
-        for (const key in data) {
-          loadedIngredienst.push({
-            id: key,
-            title: data[key].title,
-            amount: data[key].amount,
-          });
-        }
-        setUserIngredients(loadedIngredienst);
-      });
-  }, []);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState();
 
   useEffect(() => {
     console.log("RENDERING INGREDIENST", userIngredients);
@@ -33,12 +18,14 @@ const Ingredients = () => {
     setUserIngredients(filteredIngredients);
   }, []);
   const addIngredientHandler = (ingredient) => {
+    setIsLoading(true);
     fetch("http://172.20.10.2:8088/ingredienst/api/v1", {
       method: "POST",
       body: JSON.stringify(ingredient),
       headers: { "Content-Type": "application/json" },
     })
       .then((response) => {
+        setIsLoading(false);
         return response.json();
       })
       .then((responseData) => {
@@ -50,14 +37,33 @@ const Ingredients = () => {
   };
 
   const removeIngredientHandler = (ingredientId) => {
-    setUserIngredients((prevIngredients) =>
-      prevIngredients.filter((ingredient) => ingredient.id !== ingredientId)
-    );
+    setIsLoading(true);
+    fetch(`http://172.20.10.2:8088/ingredienst/api/v1/${ingredientId}`, {
+      method: "DELETE",
+    })
+      .then((response) => {
+        setIsLoading(false);
+        setUserIngredients((prevIngredients) =>
+          prevIngredients.filter((ingredient) => ingredient.id !== ingredientId)
+        );
+      })
+      .catch((error) => {
+        setError(error.message);
+        setIsLoading(false);
+      });
+  };
+
+  const clearError = () => {
+    setError(null);
   };
 
   return (
     <div className="App">
-      <IngredientForm onAddIngredient={addIngredientHandler} />
+      {error && <ErrorModal onClose={clearError}>{error}</ErrorModal>}
+      <IngredientForm
+        onAddIngredient={addIngredientHandler}
+        loading={isLoading}
+      />
 
       <section>
         <Search onLoadIngredients={filteredIngredientsHandler} />
