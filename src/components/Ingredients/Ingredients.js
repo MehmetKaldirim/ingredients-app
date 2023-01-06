@@ -4,6 +4,7 @@ import IngredientForm from "./IngredientForm";
 import IngredientList from "./IngredientList";
 import ErrorModal from "../UI/ErrorModal";
 import Search from "./Search";
+import useHttp from "../../hooks/http";
 
 const ingredientReducer = (currentIngredients, action) => {
   switch (action.type) {
@@ -18,31 +19,13 @@ const ingredientReducer = (currentIngredients, action) => {
   }
 };
 
-const httpReducer = (curHttpState, action) => {
-  switch (action.type) {
-    case "SEND":
-      return { loading: true, error: null };
-    case "RESPONSE":
-      return { ...curHttpState, loading: false };
-    case "ERROR":
-      return { loading: false, error: action.errorMessage };
-    case "CLEAR":
-      return { ...curHttpState, error: null };
-    default:
-      throw new Error("Should not be reached!");
-  }
-};
-
 const Ingredients = () => {
   const [userIngredients, dispatch] = useReducer(ingredientReducer, []);
 
   // const [userIngredients, setUserIngredients] = useState([]);
   //const [isLoading, setIsLoading] = useState(false);
   //const [error, setError] = useState();
-  const [httpState, dispatchHttp] = useReducer(httpReducer, {
-    loading: false,
-    error: null,
-  });
+
   useEffect(() => {
     console.log("RENDERING INGREDIENST", userIngredients);
   }, [userIngredients]);
@@ -76,25 +59,9 @@ const Ingredients = () => {
       });
   };
 
-  const removeIngredientHandler = (ingredientId) => {
+  const removeIngredientHandler = useCallback((ingredientId) => {
     dispatchHttp({ type: "SEND" });
-    fetch(`http://172.20.10.2:8088/ingredienst/api/v1/${ingredientId}`, {
-      method: "DELETE",
-    })
-      .then((response) => {
-        dispatchHttp({ type: "RESPONSE" });
-        //setUserIngredients((prevIngredients) =>
-        //  prevIngredients.filter((ingredient) => ingredient.id !== ingredientId)
-        //);
-        dispatch({
-          type: "DELETE",
-          id: ingredientId,
-        });
-      })
-      .catch((error) => {
-        dispatchHttp({ type: "ERROR", errorMessage: "Something went wrong" });
-      });
-  };
+  }, []);
 
   const clearError = () => {
     dispatchHttp({ type: "CLEAR" });
