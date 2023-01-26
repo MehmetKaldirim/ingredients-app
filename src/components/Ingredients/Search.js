@@ -1,47 +1,55 @@
 import React, { useState, useEffect, useRef } from "react";
 
 import Card from "../UI/Card";
+import ErrorModal from "../UI/ErrorModal";
+import useHttp from "../../hooks/http";
 import "./Search.css";
 
 const Search = React.memo((props) => {
   const { onLoadIngredients } = props;
   const [enteredFilter, setEnteredFilter] = useState("");
   const inputRef = useRef();
+  const { isLoading, data, error, sendRequest, clear } = useHttp();
 
   useEffect(() => {
     const timer = setTimeout(() => {
       if (enteredFilter === inputRef.current.value) {
         const query = enteredFilter.length === 0 ? "" : "/" + enteredFilter;
 
-        fetch(`http://172.20.10.2:8088/ingredienst/api/v1${query}`)
-          .then((response) => response.json())
-          .then((responseData) => {
-            const loadedIngredients = [];
-            const data = responseData.data;
-
-            for (const key in data) {
-              loadedIngredients.push({
-                id: key,
-                title: data[key].title,
-                amount: data[key].amount,
-              });
-            }
-            console.log("here we are");
-            console.log(loadedIngredients);
-            onLoadIngredients(loadedIngredients);
-          });
+        sendRequest(
+          `http://172.20.10.2:8088/ingredients/api/v3${query}`,
+          "GET"
+        );
       }
-    }, 3500);
+    }, 500);
     return () => {
       clearTimeout(timer);
     };
-  }, [enteredFilter, onLoadIngredients, inputRef]);
+  }, [enteredFilter, inputRef, sendRequest]);
+
+  useEffect(() => {
+    if (!isLoading && !error && data) {
+      const loadedIngredients = [];
+      const medata = data.data;
+
+      for (const key in medata) {
+        loadedIngredients.push({
+          id: key,
+          title: medata[key].title,
+          amount: medata[key].amount,
+        });
+      }
+      onLoadIngredients(loadedIngredients);
+    }
+  }, [data, isLoading, error, onLoadIngredients]);
 
   return (
     <section className="search">
+      {error && <ErrorModal onClose={clear}>{error}</ErrorModal>}
       <Card>
         <div className="search-input">
           <label>Filter by Title</label>
+          {isLoading && <span>Loading...</span>}
           <input
             ref={inputRef}
             type="text"
